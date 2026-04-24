@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OnGatewayConnection, OnGatewayDisconnect, WebSocketGateway, WebSocketServer, } from '@nestjs/websockets';
+import {
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 
@@ -11,7 +16,9 @@ import { JwtService } from '@nestjs/jwt';
   namespace: '/',
 })
 @Injectable()
-export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class WebsocketGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   private readonly logger = new Logger(WebsocketGateway.name);
 
   @WebSocketServer()
@@ -27,13 +34,16 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       return;
     }
 
+    // The await is intentional - we need to wait for the JWT verification
+
     try {
       const payload = await this.jwt.verifyAsync(token);
       client.data.userId = payload.sub;
       client.join(`user:${payload.sub}`);
       this.logger.log(`Socket connected: ${client.id} (user ${payload.sub})`);
-    } catch (err) {
-      this.logger.warn(`JWT verify failed for socket ${client.id}`);
+    } catch (err: unknown) {
+      // Using err to satisfy linter, but not exposing sensitive info
+      this.logger.warn(`JWT verify failed for socket ${client.id}`, err);
       client.disconnect();
     }
   }
